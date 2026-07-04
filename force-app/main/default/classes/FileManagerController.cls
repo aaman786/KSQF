@@ -4,6 +4,10 @@
  */
 public with sharing class FileManagerController {
 
+    // Hardcoded setting: when a file is uploaded into a sub-folder, also link it
+    // directly to the host record so it appears in the record's standard Files list.
+    private static final Boolean LINK_FILES_TO_PARENT_RECORD = true;
+
     // ─── Folder Operations ────────────────────────────────────────────────────
 
     /**
@@ -82,7 +86,7 @@ public with sharing class FileManagerController {
      * Returns files linked to a specific folder (or root of a record).
      * folderId can be null → returns root-level files for the record.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<FileWrapper> getFiles(String linkedEntityId) {
         List<FileWrapper> files = new List<FileWrapper>();
         List<ContentDocumentLink> links = [
@@ -109,6 +113,45 @@ public with sharing class FileManagerController {
             files.add(w);
         }
         return files;
+    }
+
+    /**
+     * When a file is uploaded into a folder, lightning-file-upload only links it to that
+     * folder. This links the same files to the host record too, so they also surface in
+     * the record's standard Files related list. No-op if the setting is off, or if the
+     * file was already uploaded directly against the record (root upload).
+     */
+    @AuraEnabled
+    public static void linkFilesToParentRecord(List<String> contentDocumentIds, String recordId) {
+        if (!LINK_FILES_TO_PARENT_RECORD || contentDocumentIds == null || contentDocumentIds.isEmpty()) {
+            return;
+        }
+
+        Set<String> alreadyLinkedDocIds = new Set<String>();
+        for (ContentDocumentLink link : [
+            SELECT ContentDocumentId
+            FROM ContentDocumentLink
+            WHERE ContentDocumentId IN :contentDocumentIds
+            AND LinkedEntityId = :recordId
+        ]) {
+            alreadyLinkedDocIds.add(link.ContentDocumentId);
+        }
+
+        List<ContentDocumentLink> linksToInsert = new List<ContentDocumentLink>();
+        for (String docId : contentDocumentIds) {
+            if (!alreadyLinkedDocIds.contains(docId)) {
+                linksToInsert.add(new ContentDocumentLink(
+                    ContentDocumentId = docId,
+                    LinkedEntityId    = recordId,
+                    ShareType         = 'V',
+                    Visibility        = 'AllUsers'
+                ));
+            }
+        }
+
+        if (!linksToInsert.isEmpty()) {
+            insert linksToInsert;
+        }
     }
 
     @AuraEnabled

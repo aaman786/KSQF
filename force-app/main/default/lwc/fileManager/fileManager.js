@@ -10,6 +10,7 @@ import renameFolder   from '@salesforce/apex/FileManagerController.renameFolder'
 import deleteFolder   from '@salesforce/apex/FileManagerController.deleteFolder';
 import renameFile     from '@salesforce/apex/FileManagerController.renameFile';
 import deleteFile     from '@salesforce/apex/FileManagerController.deleteFile';
+import linkFilesToParentRecord from '@salesforce/apex/FileManagerController.linkFilesToParentRecord';
 
 const ICON_MAP = {
     pdf  : 'doctype:pdf',
@@ -190,9 +191,23 @@ export default class FileManager extends NavigationMixin(LightningElement) {
     }
 
     // ── Upload ────────────────────────────────────────────────────────────────
-    handleUploadFinished(evt) {
+    async handleUploadFinished(evt) {
         const uploaded = evt.detail.files;
         this.showToast('Success', `${uploaded.length} file(s) uploaded.`, 'success');
+
+        // Files uploaded into a folder are only linked to the folder by lightning-file-upload.
+        // Also link them to the host record so they show up in the record's own Files list.
+        if (this._selectedFolderId) {
+            try {
+                await linkFilesToParentRecord({
+                    contentDocumentIds : uploaded.map(f => f.documentId),
+                    recordId           : this.recordId,
+                });
+            } catch (e) {
+                this.showToast('Warning', 'Files uploaded, but linking to the record failed.', 'warning');
+            }
+        }
+
         this.loadFiles(this.uploadTargetId);
     }
 
