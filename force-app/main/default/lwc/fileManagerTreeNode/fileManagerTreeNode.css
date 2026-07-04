@@ -1,0 +1,35 @@
+.ftn-node {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px 5px 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 1px 4px;
+    font-size: 13px;
+    color: #3e3e3c;
+    transition: background 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.ftn-node:hover       { background: #e8f0fe; }
+.ftn-node--active     { background: #d8e8fd; font-weight: 600; }
+
+.ftn-spacer  { flex-shrink: 0; }
+.ftn-chevron { flex-shrink: 0; margin-right: 2px; }
+.ftn-icon    { flex-shrink: 0; margin-right: 5px; }
+.ftn-label   {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Actions — hidden by default, visible on hover */
+.ftn-actions {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+.ftn-node:hover .ftn-actions { display: flex; }

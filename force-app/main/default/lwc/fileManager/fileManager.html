@@ -1,0 +1,244 @@
+<template>
+    <lightning-card title="File Manager" icon-name="standard:folder">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button
+                    label="New Folder"
+                    icon-name="utility:add"
+                    onclick={openNewRootFolderModal}>
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <div class="fm-container">
+            <!-- ── LEFT: Folder Tree ── -->
+            <div class="fm-tree">
+                <div class="fm-tree-header">
+                    <lightning-icon icon-name="utility:rows" size="x-small"></lightning-icon>
+                    <span>Folders</span>
+                </div>
+
+                <!-- Root-level upload / view all -->
+                <div
+                    class={rootItemClass}
+                    onclick={selectRoot}
+                    title="All Files (root)">
+                    <lightning-icon icon-name="utility:home" size="x-small" class="fm-node-icon"></lightning-icon>
+                    <span class="fm-node-label">Root</span>
+                </div>
+
+                <!-- Recursive folder tree -->
+                <template for:each={rootFolders} for:item="folder">
+                    <c-file-manager-tree-node
+                        key={folder.id}
+                        node={folder}
+                        selected-id={selectedFolderId}
+                        onfolderselect={handleFolderSelect}
+                        onnewfolder={handleNewSubFolder}
+                        onrenamefolder={handleRenameFolder}
+                        ondeletefolder={handleDeleteFolder}>
+                    </c-file-manager-tree-node>
+                </template>
+
+                <template if:true={noFolders}>
+                    <p class="fm-empty-hint">No folders yet. Create one above.</p>
+                </template>
+            </div>
+
+            <!-- ── RIGHT: Files Panel ── -->
+            <div class="fm-files">
+                <!-- Breadcrumb -->
+                <div class="fm-breadcrumb">
+                    <template for:each={breadcrumb} for:item="crumb">
+                        <span key={crumb.id} class="fm-crumb" data-id={crumb.id} onclick={onCrumbClick}>
+                            {crumb.name}
+                        </span>
+                        <template if:true={crumb.hasNext}>
+                            <lightning-icon key={crumb.name} icon-name="utility:chevronright" size="xx-small" class="fm-crumb-sep"></lightning-icon>
+                        </template>
+                    </template>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="fm-toolbar">
+                    <span class="fm-folder-title">{currentFolderName}</span>
+                    <div class="fm-toolbar-actions">
+                        <template if:true={selectedFolderId}>
+                            <lightning-button
+                                label="New Sub-Folder"
+                                icon-name="utility:add"
+                                variant="neutral"
+                                onclick={openNewSubFolderModal}>
+                            </lightning-button>
+                        </template>
+                        <lightning-file-upload
+                            label=""
+                            name="fileUpload"
+                            accept={acceptedFormats}
+                            record-id={uploadTargetId}
+                            onuploadfinished={handleUploadFinished}
+                            multiple>
+                        </lightning-file-upload>
+                    </div>
+                </div>
+
+                <!-- File Grid -->
+                <template if:true={isLoading}>
+                    <div class="fm-loading">
+                        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                    </div>
+                </template>
+
+                <template if:false={isLoading}>
+                    <template if:true={hasFiles}>
+                        <div class="fm-file-grid">
+                            <template for:each={currentFiles} for:item="file">
+                                <div key={file.id} class="fm-file-card">
+                                    <div class="fm-file-icon">
+                                        <lightning-icon
+                                            icon-name={file.iconName}
+                                            size="large">
+                                        </lightning-icon>
+                                    </div>
+                                    <div class="fm-file-name" title={file.name}>{file.name}</div>
+                                    <div class="fm-file-meta">{file.sizeFriendly} · {file.createdByName}</div>
+                                    <div class="fm-file-actions">
+                                        <lightning-button-icon
+                                            icon-name="utility:download"
+                                            variant="bare"
+                                            title="Download"
+                                            data-id={file.id}
+                                            data-version={file.versionId}
+                                            onclick={downloadFile}>
+                                        </lightning-button-icon>
+                                        <lightning-button-icon
+                                            icon-name="utility:edit"
+                                            variant="bare"
+                                            title="Rename"
+                                            data-id={file.id}
+                                            data-name={file.name}
+                                            onclick={openRenameFileModal}>
+                                        </lightning-button-icon>
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            variant="bare"
+                                            title="Delete"
+                                            data-id={file.id}
+                                            onclick={openDeleteFileConfirm}>
+                                        </lightning-button-icon>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template if:false={hasFiles}>
+                        <div class="fm-empty-state">
+                            <lightning-icon icon-name="utility:upload" size="large"></lightning-icon>
+                            <p>No files here. Upload files using the button above.</p>
+                        </div>
+                    </template>
+                </template>
+            </div>
+        </div>
+
+        <!-- ── Modals ── -->
+
+        <!-- New / Rename Folder Modal -->
+        <template if:true={showFolderModal}>
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-modal__title">{folderModalTitle}</h2>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            onclick={closeFolderModal}
+                            variant="bare-inverse"
+                            class="slds-modal__close">
+                        </lightning-button-icon>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-input
+                            label="Folder Name"
+                            value={folderModalName}
+                            onchange={onFolderNameChange}
+                            placeholder="Enter folder name">
+                        </lightning-input>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Cancel" onclick={closeFolderModal}></lightning-button>
+                        <lightning-button
+                            label="Save"
+                            variant="brand"
+                            onclick={saveFolderModal}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Rename File Modal -->
+        <template if:true={showRenameFileModal}>
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-modal__title">Rename File</h2>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            onclick={closeRenameFileModal}
+                            variant="bare-inverse"
+                            class="slds-modal__close">
+                        </lightning-button-icon>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-input
+                            label="File Title"
+                            value={renameFileTitle}
+                            onchange={onRenameFileTitleChange}>
+                        </lightning-input>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Cancel" onclick={closeRenameFileModal}></lightning-button>
+                        <lightning-button
+                            label="Rename"
+                            variant="brand"
+                            onclick={saveRenameFile}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Delete Confirm Modal -->
+        <template if:true={showDeleteConfirm}>
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header fm-delete-header">
+                        <h2 class="slds-modal__title">Confirm Delete</h2>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            onclick={closeDeleteConfirm}
+                            variant="bare-inverse"
+                            class="slds-modal__close">
+                        </lightning-button-icon>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{deleteConfirmMessage}</p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Cancel" onclick={closeDeleteConfirm}></lightning-button>
+                        <lightning-button
+                            label="Delete"
+                            variant="destructive"
+                            onclick={confirmDelete}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+    </lightning-card>
+</template>

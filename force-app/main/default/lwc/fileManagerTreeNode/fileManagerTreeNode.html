@@ -1,0 +1,73 @@
+<template>
+    <!-- Folder row -->
+    <div class={nodeClass} onclick={onNodeClick} title={node.name}>
+        <!-- Indent spacer -->
+        <span class="ftn-spacer" style={indentStyle}></span>
+
+        <!-- Expand/collapse chevron -->
+        <lightning-button-icon
+            icon-name={chevronIcon}
+            variant="bare"
+            size="x-small"
+            class="ftn-chevron"
+            onclick={toggleExpand}
+            title="Expand/Collapse">
+        </lightning-button-icon>
+
+        <!-- Folder icon -->
+        <lightning-icon
+            icon-name={folderIcon}
+            size="x-small"
+            class="ftn-icon">
+        </lightning-icon>
+
+        <!-- Folder name -->
+        <span class="ftn-label">{node.name}</span>
+
+        <!-- Context actions (show on hover via CSS) -->
+        <span class="ftn-actions" onclick={stopProp}>
+            <lightning-button-icon
+                icon-name="utility:add"
+                variant="bare"
+                size="x-small"
+                title="New Sub-Folder"
+                data-id={node.id}
+                onclick={onNewSubFolder}>
+            </lightning-button-icon>
+            <lightning-button-icon
+                icon-name="utility:edit"
+                variant="bare"
+                size="x-small"
+                title="Rename"
+                data-id={node.id}
+                data-name={node.name}
+                onclick={onRename}>
+            </lightning-button-icon>
+            <lightning-button-icon
+                icon-name="utility:delete"
+                variant="bare"
+                size="x-small"
+                title="Delete"
+                data-id={node.id}
+                data-name={node.name}
+                onclick={onDelete}>
+            </lightning-button-icon>
+        </span>
+    </div>
+
+    <!-- Children (recursive) -->
+    <template if:true={isExpanded}>
+        <template for:each={node.children} for:item="child">
+            <c-file-manager-tree-node
+                key={child.id}
+                node={child}
+                depth={childDepth}
+                selected-id={selectedId}
+                onfolderselect={bubbleEvent}
+                onnewfolder={bubbleEvent}
+                onrenamefolder={bubbleEvent}
+                ondeletefolder={bubbleEvent}>
+            </c-file-manager-tree-node>
+        </template>
+    </template>
+</template>
