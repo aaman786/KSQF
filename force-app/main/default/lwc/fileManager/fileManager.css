@@ -125,6 +125,8 @@
     color: #1c1c1c;
     margin-bottom: 4px;
 }
+.fm-file-preview-target { cursor: pointer; }
+.fm-file-preview-target:hover { opacity: 0.8; }
 .fm-file-meta  { font-size: 10px; color: #888; margin-bottom: 6px; }
 .fm-file-actions {
     display: flex;

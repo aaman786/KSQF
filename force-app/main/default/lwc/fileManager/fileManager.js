@@ -285,7 +285,7 @@ export default class FileManager extends NavigationMixin(LightningElement) {
     }
 
     // ── File Actions ──────────────────────────────────────────────────────────
-    downloadFile(evt) {
+    previewFile(evt) {
         const versionId = evt.currentTarget.dataset.version;
         this[NavigationMixin.Navigate]({
             type       : 'standard__namedPage',

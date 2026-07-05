@@ -94,22 +94,32 @@
                         <div class="fm-file-grid">
                             <template for:each={currentFiles} for:item="file">
                                 <div key={file.id} class="fm-file-card">
-                                    <div class="fm-file-icon">
+                                    <div
+                                        class="fm-file-icon fm-file-preview-target"
+                                        data-version={file.versionId}
+                                        onclick={previewFile}
+                                        title="Click to preview">
                                         <lightning-icon
                                             icon-name={file.iconName}
                                             size="large">
                                         </lightning-icon>
                                     </div>
-                                    <div class="fm-file-name" title={file.name}>{file.name}</div>
+                                    <div
+                                        class="fm-file-name fm-file-preview-target"
+                                        title={file.name}
+                                        data-version={file.versionId}
+                                        onclick={previewFile}>
+                                        {file.name}
+                                    </div>
                                     <div class="fm-file-meta">{file.sizeFriendly} · {file.createdByName}</div>
                                     <div class="fm-file-actions">
                                         <lightning-button-icon
-                                            icon-name="utility:download"
+                                            icon-name="utility:preview"
                                             variant="bare"
-                                            title="Download"
+                                            title="Preview"
                                             data-id={file.id}
                                             data-version={file.versionId}
-                                            onclick={downloadFile}>
+                                            onclick={previewFile}>
                                         </lightning-button-icon>
                                         <lightning-button-icon
                                             icon-name="utility:edit"
